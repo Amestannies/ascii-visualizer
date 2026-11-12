@@ -4,5 +4,4 @@ dist/
 __pycache__/
 gesture-model/data/
 gesture-model/models/
-docs/reference/git-and-gh.md
-docs/reference/terminal-basics.md
+docs/reference/
