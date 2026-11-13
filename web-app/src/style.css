@@ -1,2 +1,9 @@
 body{ margin: 0;}
 canvas { display: block; }
+
+#ascii-id {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
