@@ -1,6 +1,7 @@
 import './style.css';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import './ascii-2d.ts';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75,
@@ -18,7 +19,6 @@ window.addEventListener( 'resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize( window.innerWidth, window.innerHeight );
 } );
-
 
 const geometry = new THREE.BoxGeometry( 1, 1, 1 );
 const material = new THREE.MeshNormalMaterial();
