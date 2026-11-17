@@ -1,3 +1,5 @@
+const glyphRamp = [' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
+
 const imageInput = document.querySelector<HTMLInputElement>( '#image-upload' ); 
 if ( imageInput === null ) {
   throw new Error( 'Invalid ID - #image-upload required' );
@@ -8,21 +10,6 @@ imageInput.addEventListener( 'change', async () => {
   if ( !file ) {
     return;
   }
-  const bitmap = await createImageBitmap( file );
-  const column = 80;
-  const charRatio = 0.5;
-  const row = Math.round( column * ( bitmap.height / bitmap.width ) * charRatio );
-
-  const hidCanvas = document.createElement( 'canvas' );
-  hidCanvas.height = row;
-  hidCanvas.width = column;
-
-  const ctx = hidCanvas.getContext( '2d' );
-  if (!ctx) {
-    return;
-  }
-  ctx.drawImage( bitmap, 0, 0, hidCanvas.width, hidCanvas.height );
-  const imageData = ctx.getImageData( 0, 0, column, row );
 
   const visCanvas = document.querySelector<HTMLCanvasElement>('#ascii-canvas');
   if ( !visCanvas ) {
@@ -38,6 +25,22 @@ imageInput.addEventListener( 'change', async () => {
   const cellHeight = fontSize; 
   const cellWidth = visCtx.measureText( 'M' ).width;
 
+  const bitmap = await createImageBitmap( file );
+  const column = 80;
+  const charRatio = cellWidth / cellHeight;
+  const row = Math.round( column * ( bitmap.height / bitmap.width ) * charRatio );
+
+  const hidCanvas = document.createElement( 'canvas' );
+  hidCanvas.height = row;
+  hidCanvas.width = column;
+
+  const ctx = hidCanvas.getContext( '2d' );
+  if (!ctx) {
+    return;
+  }
+  ctx.drawImage( bitmap, 0, 0, hidCanvas.width, hidCanvas.height );
+  const imageData = ctx.getImageData( 0, 0, column, row );
+
   visCanvas.width = column * cellWidth;
   visCanvas.height = row * cellHeight;
   visCtx.fillStyle = '#111111';
@@ -46,10 +49,25 @@ imageInput.addEventListener( 'change', async () => {
   visCtx.font = `${ fontSize }px monospace`;
   visCtx.textBaseline = 'top';
   visCtx.fillStyle = '#ffffff';
-  visCtx.fillText( '@', 0, 0 );
 
-   console.log( imageData );
+  for ( let y = 0; y < row; y++ ) { 
+    for ( let x = 0; x < column; x++ ) {
+      const cellIndex = ( y * column + x ) * 4;
+      
+      const red = imageData.data[cellIndex] ; 
+      const green = imageData.data[cellIndex + 1];
+      const blue = imageData.data[cellIndex + 2];
+
+      const brightness = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+
+      const glyphIndex= Math.floor( brightness / 256 * glyphRamp.length );
+
+      visCtx.fillText( glyphRamp[glyphIndex], x * cellWidth, y * cellHeight );
+    } 
+  }
+
+  
 } );
 
-console.log( imageInput );
+
 
