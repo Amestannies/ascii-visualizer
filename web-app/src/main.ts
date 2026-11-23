@@ -2,6 +2,7 @@ import './style.css';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import './ascii-2d.ts';
+import { createCanvas } from './glyph-atlas.ts';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75,
@@ -21,8 +22,8 @@ window.addEventListener( 'resize', () => {
 } );
 
 const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-const material = new THREE.MeshNormalMaterial();
-const cube = new THREE.Mesh( geometry, material );
+const normMaterial = new THREE.MeshNormalMaterial();
+const cube = new THREE.Mesh( geometry, normMaterial );
 scene.add( cube );
 
 camera.position.z = 5;
@@ -37,3 +38,20 @@ function animate( ) {
 }
 renderer.setAnimationLoop( animate );
 
+const canvas = createCanvas();
+const texture = new THREE.CanvasTexture(canvas);
+const basicMaterial = new THREE.MeshBasicMaterial({ map: texture });
+const planeGeometry = new THREE.PlaneGeometry( 2, 2 );
+
+const atlas = new THREE.Mesh ( planeGeometry, basicMaterial );
+scene.add( atlas );
+atlas.position.x = 2.5;
+
+const clone = texture.clone();
+const cloneMat = new THREE.MeshBasicMaterial({ map: clone });
+clone.repeat.set( .25, .25 );
+clone.offset.set( .75, 0 );
+
+const cloneAtlas = new THREE.Mesh ( planeGeometry, cloneMat );
+scene.add( cloneAtlas );
+cloneAtlas.position.x = -2.5;

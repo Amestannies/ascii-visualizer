@@ -1,5 +1,5 @@
-const glyphRamp = [' ', '.', ':', '-', '=', '+', '*', '#', '%', '@'];
-
+import { glyph } from './glyph-ramp.ts';
+const glyphRamp = glyph();
 const imageInput = document.querySelector<HTMLInputElement>( '#image-upload' ); 
 if ( imageInput === null ) {
   throw new Error( 'Invalid ID - #image-upload required' );
