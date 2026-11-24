@@ -1,9 +1,11 @@
 import './style.css';
+import './ascii-2d.ts';
+import './keyboard-controls.ts';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import './ascii-2d.ts';
 import { createCanvas } from './glyph-atlas.ts';
 import { sampleGlyphs } from './glyph-grid.ts';
+import { state } from './state.ts'
 import vertexShader from './shaders/glyph-vert.glsl?raw';
 import fragmentShader from './shaders/glyph-frag.glsl?raw';
 
@@ -27,7 +29,24 @@ window.addEventListener('resize', () => {
 
 camera.position.z = 5;
 
-function animate() {
+let prevTime = 0;
+
+function animate(time: number) {
+  const dt = Math.min((time - prevTime) / 1000, 0.1);
+  prevTime = time;
+  const k = 1 - Math.exp(-6 * dt);
+
+  const explodeTarget = 1 - state.form;
+  state.explode += (explodeTarget - state.explode) * k;
+  fieldMaterial.uniforms.uExplode.value = state.explode;
+
+  field.rotation.x += (state.rotation.x - field.rotation.x) * k;
+  field.rotation.y += (state.rotation.y - field.rotation.y) * k;
+
+  const scale = field.scale.x + (state.zoom - field.scale.x) * k;
+  field.scale.setScalar(scale);
+  fieldMaterial.uniforms.uSize.value = spacing * scale;
+
   controls.update();
 
   renderer.render(scene, camera);
@@ -38,10 +57,12 @@ const canvas = createCanvas();
 const texture = new THREE.CanvasTexture(canvas);
 
 const spacing = 0.075;
+const explodeDistance = 3;
 
 function pointGrid(aGlyph: Float32Array, colCount: number, rowCount: number) {
   const numOfSlots = 3;
   const float32 = new Float32Array(colCount * rowCount * numOfSlots);
+  const offsets = new Float32Array(colCount * rowCount * numOfSlots);
 
   const shiftX = ((colCount - 1) * spacing) / 2;
   const shiftY = ((rowCount - 1) * spacing) / 2;
@@ -49,6 +70,10 @@ function pointGrid(aGlyph: Float32Array, colCount: number, rowCount: number) {
   for (let i = 0; i < float32.length / numOfSlots; i++) {
     const column = i % colCount;
     const row = Math.floor(i / colCount);
+
+    offsets[i * numOfSlots] = (Math.random() * 2 - 1) * explodeDistance;
+    offsets[i * numOfSlots + 1] = (Math.random() * 2 - 1) * explodeDistance;
+    offsets[i * numOfSlots + 2] = (Math.random() * 2 - 1) * explodeDistance;
 
     const x = column * spacing - shiftX;
     const y = -row * spacing + shiftY;
@@ -61,6 +86,7 @@ function pointGrid(aGlyph: Float32Array, colCount: number, rowCount: number) {
     'position',
     new THREE.BufferAttribute(float32, numOfSlots));
   fieldGeometry.setAttribute('aGlyph', new THREE.BufferAttribute(aGlyph, 1));
+  fieldGeometry.setAttribute('aOffset', new THREE.BufferAttribute(offsets, numOfSlots));
 
   return fieldGeometry;
 }
@@ -69,7 +95,8 @@ const fieldMaterial = new THREE.ShaderMaterial({
   uniforms: {
     uAtlas: { value: texture },
     uSize: { value: spacing },
-    uHalfHeight: { value: renderer.domElement.height / 2 }
+    uHalfHeight: { value: renderer.domElement.height / 2 },
+    uExplode: { value: 0 }
   },
   vertexShader: vertexShader,
   fragmentShader: fragmentShader,
@@ -105,6 +132,5 @@ fieldInput.addEventListener('change', async () => {
   field.geometry.dispose();
   field.geometry = pointGrid(glyphs, columns, rows);
 });
-
 
 
