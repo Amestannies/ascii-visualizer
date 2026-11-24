@@ -1,6 +1,7 @@
 import './style.css';
 import './ascii-2d.ts';
 import './keyboard-controls.ts';
+import { depthEstimator } from './depth.ts';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createCanvas } from './glyph-atlas.ts';
@@ -58,11 +59,13 @@ const texture = new THREE.CanvasTexture(canvas);
 
 const spacing = 0.075;
 const explodeDistance = 3;
+const depthRange = 1.5;
 
 function pointGrid(aGlyph: Float32Array, colCount: number, rowCount: number) {
   const numOfSlots = 3;
   const float32 = new Float32Array(colCount * rowCount * numOfSlots);
   const offsets = new Float32Array(colCount * rowCount * numOfSlots);
+  const depth = new Float32Array(colCount * rowCount * 1);
 
   const shiftX = ((colCount - 1) * spacing) / 2;
   const shiftY = ((rowCount - 1) * spacing) / 2;
@@ -87,7 +90,7 @@ function pointGrid(aGlyph: Float32Array, colCount: number, rowCount: number) {
     new THREE.BufferAttribute(float32, numOfSlots));
   fieldGeometry.setAttribute('aGlyph', new THREE.BufferAttribute(aGlyph, 1));
   fieldGeometry.setAttribute('aOffset', new THREE.BufferAttribute(offsets, numOfSlots));
-
+  fieldGeometry.setAttribute('aDepth', new THREE.BufferAttribute(depth, 1));
   return fieldGeometry;
 }
 
@@ -129,8 +132,24 @@ fieldInput.addEventListener('change', async () => {
 
   const glyphs = sampleGlyphs(bitmap, columns, rows);
 
+  const geometry = pointGrid(glyphs, columns, rows);
   field.geometry.dispose();
-  field.geometry = pointGrid(glyphs, columns, rows);
+  field.geometry = geometry;
+
+  const estimator = await depthEstimator;
+  const { depth } = await estimator(file);
+  const gridDepth = await depth.resize(columns, rows);
+
+  if (field.geometry !== geometry) {
+    return;
+  }
+
+  const depthAttribute = geometry.getAttribute('aDepth');
+  for (let i = 0; i < gridDepth.data.length; i++) {
+    depthAttribute.array[i] = (gridDepth.data[i] / 255) * depthRange - depthRange / 2;
+  }
+  depthAttribute.needsUpdate = true;
+
 });
 
 
