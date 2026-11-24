@@ -30,4 +30,5 @@ export function createCanvas() {
 
     ctx.fillText( glyphRamp[ glyphIndex ], leftEdge, topEdge );
   }
+  return canvas;
 }
