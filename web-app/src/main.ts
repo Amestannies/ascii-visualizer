@@ -24,17 +24,9 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const normMaterial = new THREE.MeshNormalMaterial();
-const cube = new THREE.Mesh(geometry, normMaterial);
-scene.add(cube);
-
 camera.position.z = 5;
 
 function animate() {
-  cube.rotation.x += 0.01;
-  cube.rotation.y += 0.01;
-
   controls.update();
 
   renderer.render(scene, camera);
@@ -43,38 +35,25 @@ renderer.setAnimationLoop(animate);
 
 const canvas = createCanvas();
 const texture = new THREE.CanvasTexture(canvas);
-const basicMaterial = new THREE.MeshBasicMaterial({ map: texture });
-const planeGeometry = new THREE.PlaneGeometry(2, 2);
 
-const atlas = new THREE.Mesh(planeGeometry, basicMaterial);
-scene.add(atlas);
-atlas.position.x = 2.5;
-
-const clone = texture.clone();
-const cloneMat = new THREE.MeshBasicMaterial({ map: clone });
-clone.repeat.set(.25, .25);
-clone.offset.set(.75, 0);
-
-const cloneAtlas = new THREE.Mesh(planeGeometry, cloneMat);
-scene.add(cloneAtlas);
-cloneAtlas.position.x = -2.5;
+const spacing = 0.075;
 
 function pointGrid(aGlyph: Float32Array, colCount: number, rowCount: number) {
-  const spacing = 0.075;
   const numOfSlots = 3;
-  const float32 = new Float32Array(colCount * rowCount * 3);
+  const float32 = new Float32Array(colCount * rowCount * numOfSlots);
+
+  const shiftX = ((colCount - 1) * spacing) / 2;
+  const shiftY = ((rowCount - 1) * spacing) / 2;
 
   for (let i = 0; i < float32.length / numOfSlots; i++) {
     const column = i % colCount;
     const row = Math.floor(i / colCount);
 
-    const x = column * spacing;
-    const y = -row * spacing;
+    const x = column * spacing - shiftX;
+    const y = -row * spacing + shiftY;
 
     float32[i * numOfSlots] = x;
     float32[i * numOfSlots + 1] = y;
-
-    aGlyph[i] = i;
   }
   const fieldGeometry = new THREE.BufferGeometry();
   fieldGeometry.setAttribute(
@@ -87,7 +66,9 @@ function pointGrid(aGlyph: Float32Array, colCount: number, rowCount: number) {
 
 const fieldMaterial = new THREE.ShaderMaterial({
   uniforms: {
-    uAtlas: { value: texture }
+    uAtlas: { value: texture },
+    uSize: { value: spacing },
+    uHalfHeight: { value: renderer.domElement.height / 2 }
   },
   vertexShader: vertexShader,
   fragmentShader: fragmentShader,
@@ -101,7 +82,6 @@ for (let i = 0; i < testGlyphs.length; i++) {
 }
 
 const field = new THREE.Points(pointGrid(testGlyphs, 4, 4), fieldMaterial);
-field.position.y = -2;
 scene.add(field);
 
 const fieldInput = document.querySelector<HTMLInputElement>('#image-upload');
