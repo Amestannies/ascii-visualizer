@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import './ascii-2d.ts';
 import { createCanvas } from './glyph-atlas.ts';
+import vertexShader from './shaders/glyph-vert.glsl?raw';
+import fragmentShader from './shaders/glyph-frag.glsl?raw';
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75,
@@ -55,3 +57,39 @@ clone.offset.set( .75, 0 );
 const cloneAtlas = new THREE.Mesh ( planeGeometry, cloneMat );
 scene.add( cloneAtlas );
 cloneAtlas.position.x = -2.5;
+
+const spacing = 0.25;
+const numOfSlots = 3;
+const float32 = new Float32Array(48);
+const aGlyph = new Float32Array(16);
+
+for (let i = 0; i < float32.length / numOfSlots; i++) {
+  const column = i % 4;
+  const row = Math.floor( i / 4 );
+
+  const x = column * spacing;
+  const y = -row * spacing;
+
+  float32[ i * numOfSlots ] = x;
+  float32[ i * numOfSlots + 1 ] = y;
+
+  aGlyph[ i ] = i;
+}
+
+const fieldGeometry = new THREE.BufferGeometry();
+fieldGeometry.setAttribute(
+  'position', 
+  new THREE.BufferAttribute( float32, numOfSlots ) );
+fieldGeometry.setAttribute( 'aGlyph', new THREE.BufferAttribute( aGlyph, 1 ));
+
+const fieldMaterial = new THREE.ShaderMaterial( { 
+  uniforms: {
+    uAtlas: { value: texture }
+  },
+  vertexShader: vertexShader, 
+  fragmentShader: fragmentShader, 
+  glslVersion: THREE.GLSL3} );
+
+const field = new THREE.Points( fieldGeometry, fieldMaterial );
+field.position.y = -2;
+scene.add( field );
