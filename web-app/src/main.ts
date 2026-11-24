@@ -22,6 +22,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  fieldMaterial.uniforms.uHalfHeight.value = renderer.domElement.height / 2;
 });
 
 camera.position.z = 5;
