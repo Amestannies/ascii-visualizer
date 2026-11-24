@@ -1,6 +1,7 @@
 import './style.css';
 import './ascii-2d.ts';
 import './keyboard-controls.ts';
+import './hand-controls.ts';
 import { depthEstimator } from './depth.ts';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
