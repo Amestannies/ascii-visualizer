@@ -1,4 +1,5 @@
 import { FilesetResolver, HandLandmarker, type NormalizedLandmark } from "@mediapipe/tasks-vision";
+import { state } from "./state.ts";
 
 const wasmUrl = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm';
 const modelUrl = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
@@ -13,6 +14,10 @@ const FIST_EXIT = 1.15;            // ...stay fist while below this one
 const OPEN_ENTER = 1.65;           // become open above this openness...
 const OPEN_EXIT = 1.55;            // ...stay open while above this one
 const STABLE_FRAMES = 3;           // a new label must repeat this many new frames in a row
+/* pinch-drag (design choices, not measurements: tune by feel) */
+const MIRROR_X = -1;                       // the preview is mirrored: hand moving right = camera x DEcreasing
+const RADIANS_PER_PIXEL = Math.PI / 640;   // dragging across the whole 640 px camera width = half a turn
+const DEAD_ZONE_PX = 3;                    // ignore smaller moves, so a still pinch doesn't creep
 
 function distance(a: NormalizedLandmark, b: NormalizedLandmark, width: number, height: number) {
   return Math.hypot((a.x - b.x) * width, (a.y - b.y) * height);
@@ -65,6 +70,16 @@ async function loadHandLandmarker() {
     });
 }
 
+/* runs only when the stable gesture CHANGES: writes the form target, never explode */
+function applyGesture(gesture: Gesture) {
+  if (gesture === 'open') {
+    state.form = 0;   // apart
+  } else if (gesture === 'fist') {
+    state.form = 1;   // together
+  }
+  // 'pinch' and 'none' leave form alone
+}
+
 const handLandmarkerReady = loadHandLandmarker();
 
 const webcam = document.querySelector<HTMLVideoElement>('#webcam');
@@ -114,6 +129,7 @@ async function startHandTracking(video: HTMLVideoElement, readout: HTMLDivElemen
   let stableGesture: Gesture = 'none';
   let candidate: Gesture = 'none';
   let candidateFrames = 0;
+  let lastPinch: { x: number; y: number } | null = null;
 
   function loop() {
     const hasFrame = video.readyState >= video.HAVE_CURRENT_DATA;
@@ -148,6 +164,30 @@ async function startHandTracking(video: HTMLVideoElement, readout: HTMLDivElemen
       if (candidateFrames >= STABLE_FRAMES && candidate !== stableGesture) {
         stableGesture = candidate;
         console.log('gesture', stableGesture);
+        applyGesture(stableGesture);
+      }
+
+      /* pinch-drag: move the rotation TARGET by how far the pinch point moved */
+      if (stableGesture === 'pinch' && hand) {
+        const point = {
+          x: (hand[4].x + hand[8].x) / 2 * video.videoWidth,
+          y: (hand[4].y + hand[8].y) / 2 * video.videoHeight,
+        };
+
+        if (lastPinch === null) {
+          lastPinch = point;   // drag starts here: no jump on the first frame
+        } else {
+          const dx = point.x - lastPinch.x;
+          const dy = point.y - lastPinch.y;
+
+          if (Math.hypot(dx, dy) >= DEAD_ZONE_PX) {
+            state.rotation.y += MIRROR_X * dx * RADIANS_PER_PIXEL;   // left-right drag turns around the vertical axis
+            state.rotation.x += dy * RADIANS_PER_PIXEL;              // up-down drag tips around the horizontal axis
+            lastPinch = point;   // only move the reference when the move counted
+          }
+        }
+      } else {
+        lastPinch = null;   // not pinching: the next pinch starts a new drag
       }
 
       readout.textContent = `${numbers}  [${stableGesture}]`;
