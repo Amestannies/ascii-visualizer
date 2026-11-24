@@ -7,14 +7,18 @@
     <title>ASCII Visualizer</title>
   </head>
   <body>
+    <!-- Part 3: photo upload + the 2D ASCII reference panel (top-left) -->
     <div id= "ascii-2d">
     <input id= "image-upload" type="file" accept="image/*">
     <canvas id= "ascii-canvas"></canvas> 
     </div>
 
+    <!-- Part 8: webcam preview (bottom-right, mirrored in CSS) and the live gesture readout above it.
+         autoplay + muted + playsinline let the video play without a click. -->
     <video id= "webcam" autoplay muted playsinline></video>
     <div id="hand-readout"></div>
 
+    <!-- one entry point; main.ts imports every other file. The Three.js canvas is added by main.ts -->
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

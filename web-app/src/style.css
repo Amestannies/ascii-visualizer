@@ -1,32 +1,36 @@
+/* full-window canvas, no page margin or scrollbars */
 body{ margin: 0;}
 canvas { display: block; }
 
+/* live gesture numbers and label (Part 8), sitting directly above the webcam preview */
 #hand-readout {
   position: fixed;
-  bottom: 180px;
+  bottom: 180px;   /* the preview's height: 240 px wide x 3/4 (the camera is 640 x 480) */
 
   right: 0;
-  width: 240px;
-  box-sizing: border-box;
+  width: 240px;            /* same width as #webcam */
+  box-sizing: border-box;  /* padding stays inside the 240 px */
 
   padding: 4px 8px;
-  font-family: monospace;
+  font-family: monospace;  /* digits don't jump sideways as they change */
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
   font-size: 12px;
   z-index: 2;
 }
 
+/* webcam preview (Part 8), bottom-right corner */
 #webcam {
   position: fixed;
   bottom: 0;
   right: 0;
   width: 240px;
-  transform: scaleX(-1);
+  transform: scaleX(-1);   /* mirror it, so moving right looks like moving right; the landmarks are NOT mirrored */
   z-index: 2;
 
 }
 
+/* the 2D ASCII reference panel (Part 3), top-left, above the 3D canvas */
 #ascii-2d {
   position: fixed;
   top: 0;
